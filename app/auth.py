@@ -1,4 +1,5 @@
 """Authentication service API endpoints."""
+
 from flask import Blueprint, request, jsonify, current_app
 import bcrypt
 import jwt
@@ -8,15 +9,19 @@ from .utils import is_valid_password
 
 auth_api = Blueprint("auth_api", __name__)
 
+
 def create_token(user_data):
     """Create a JWT token for the user."""
     payload = {
-        'user_id': user_data['id'],
-        'username': user_data['username'],
-        'is_admin': user_data.get('is_admin', False),
-        'exp': datetime.utcnow() + timedelta(days=1)
+        "user_id": user_data["id"],
+        "username": user_data["username"],
+        "is_admin": user_data.get("is_admin", False),
+        "exp": datetime.utcnow() + timedelta(days=1),
     }
-    return jwt.encode(payload, current_app.config['JWT_SECRET_KEY'], algorithm='HS256')
+    return jwt.encode(
+        payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256"
+    )
+
 
 @auth_api.route("/api/auth/login", methods=["POST"])
 def login():
@@ -27,7 +32,10 @@ def login():
         password = data.get("password")
 
         if not username or not password:
-            return jsonify({"error": "Username and password are required"}), 400
+            return (
+                jsonify({"error": "Username and password are required"}),
+                400,
+            )
 
         # Get user from database
         user_response = (
@@ -48,21 +56,24 @@ def login():
         ):
             # Generate JWT token
             token = create_token(user_data)
-            
-            return jsonify({
-                "token": token,
-                "user": {
-                    "id": user_data["id"],
-                    "username": user_data["username"],
-                    "is_admin": user_data.get("is_admin", False)
+
+            return jsonify(
+                {
+                    "token": token,
+                    "user": {
+                        "id": user_data["id"],
+                        "username": user_data["username"],
+                        "is_admin": user_data.get("is_admin", False),
+                    },
                 }
-            })
+            )
         else:
             return jsonify({"error": "Invalid credentials"}), 401
 
     except Exception as e:
         current_app.logger.error(f"Login error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
 
 @auth_api.route("/api/auth/register", methods=["POST"])
 def register():
@@ -73,7 +84,10 @@ def register():
         password = data.get("password")
 
         if not username or not password:
-            return jsonify({"error": "Username and password are required"}), 400
+            return (
+                jsonify({"error": "Username and password are required"}),
+                400,
+            )
 
         # Check if username exists
         existing_user = (
@@ -82,7 +96,7 @@ def register():
             .eq("username", username)
             .execute()
         )
-        
+
         if existing_user.data:
             return jsonify({"error": "Username already exists"}), 409
 
@@ -102,7 +116,7 @@ def register():
         }
 
         response = supabase.table("profiles").insert(profile_data).execute()
-        
+
         if response.data:
             return jsonify({"message": "Registration successful"}), 201
         else:
@@ -112,20 +126,21 @@ def register():
         current_app.logger.error(f"Registration error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
+
 @auth_api.route("/api/auth/verify", methods=["POST"])
 def verify_token():
     """Verify JWT token."""
     try:
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
             return jsonify({"error": "No token provided"}), 401
 
-        token = auth_header.split(' ')[1]
+        token = auth_header.split(" ")[1]
         try:
             payload = jwt.decode(
-                token, 
-                current_app.config['JWT_SECRET_KEY'], 
-                algorithms=['HS256']
+                token,
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"],
             )
             return jsonify({"valid": True, "user": payload}), 200
         except jwt.ExpiredSignatureError:

@@ -1,5 +1,7 @@
 """Utility functions for the authentication service."""
+
 import re
+
 
 def is_valid_password(password):
     """Check if password meets security requirements."""
