@@ -18,7 +18,9 @@ def create_token(user_data: dict) -> str:
         "is_admin": user_data.get("is_admin", False),
         "exp": datetime.utcnow() + timedelta(days=1),
     }
-    return jwt.encode(payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256")
+    return jwt.encode(
+        payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256"
+    )
 
 
 @auth_api.route("/api/auth/login", methods=["POST"])
@@ -30,11 +32,17 @@ def login():
         password = data.get("password")
 
         if not username or not password:
-            return jsonify({"error": "Username and password are required"}), 400
+            return (
+                jsonify({"error": "Username and password are required"}),
+                400,
+            )
 
         # Get user from database
         user_response = (
-            supabase.table("profiles").select("*").eq("username", username).execute()
+            supabase.table("profiles")
+            .select("*")
+            .eq("username", username)
+            .execute()
         )
 
         if not user_response.data:
@@ -76,7 +84,10 @@ def register():
         password = data.get("password")
 
         if not username or not password:
-            return jsonify({"error": "Username and password are required"}), 400
+            return (
+                jsonify({"error": "Username and password are required"}),
+                400,
+            )
 
         # Check if username exists
         existing_user = (
@@ -127,7 +138,9 @@ def verify_token():
         token = auth_header.split(" ")[1]
         try:
             payload = jwt.decode(
-                token, current_app.config["JWT_SECRET_KEY"], algorithms=["HS256"]
+                token,
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"],
             )
             return jsonify({"valid": True, "user": payload}), 200
         except jwt.ExpiredSignatureError:
