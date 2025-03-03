@@ -70,7 +70,7 @@ jobs:
           python-version: '3.9'
       - name: Install dependencies
         run: |
-          pip install flake8 pylint pytest pytest-cov
+          pip install flake8 pylint pytest pytest-cov black isort mypy
           pip install -r requirements.txt
       - name: Run Black
         run: black --check --diff .
