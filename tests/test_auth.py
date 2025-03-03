@@ -46,12 +46,10 @@ def test_verify_token_expired(client):
     expired_payload = {
         "user_id": 1,
         "username": "test",
-        "exp": datetime.now(timezone.utc) - timedelta(days=1)
+        "exp": datetime.now(timezone.utc) - timedelta(days=1),
     }
     expired_token = jwt.encode(
-        expired_payload,
-        "test_secret_key",
-        algorithm="HS256"
+        expired_payload, "test_secret_key", algorithm="HS256"
     )
     response = client.post("/api/auth/verify", json={"token": expired_token})
     assert response.status_code == 401
