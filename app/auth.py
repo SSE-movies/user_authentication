@@ -1,4 +1,4 @@
-"""Authentication service API endpoints."""
+"""Authentication service API endpoints"""
 
 from datetime import datetime, timedelta
 import bcrypt
