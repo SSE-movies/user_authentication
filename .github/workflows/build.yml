@@ -27,7 +27,7 @@ jobs:
           python-version: '3.9'
       - name: Install dependencies
         run: |
-          pip install black isort mypy
+          pip install black mypy
           pip install -r requirements.txt
       - name: Run Black
         run: black . --line-length 79
@@ -70,12 +70,10 @@ jobs:
           python-version: '3.9'
       - name: Install dependencies
         run: |
-          pip install flake8 pylint pytest pytest-cov black isort mypy
+          pip install flake8 pylint pytest pytest-cov black mypy
           pip install -r requirements.txt
       - name: Run Black
         run: black --check --diff .
-      - name: Run isort
-        run: isort --check-only --diff .
       - name: Run flake8
         run: |
           flake8 . \
