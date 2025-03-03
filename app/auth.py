@@ -63,14 +63,16 @@ def login():
             return jsonify({"error": "Invalid credentials"}), 401
 
         token = create_token(user_data)
-        return jsonify({
-            "token": token,
-            "user": {
-                "id": user_data["id"],
-                "username": user_data["username"],
-                "is_admin": user_data.get("is_admin", False),
-            },
-        })
+        return jsonify(
+            {
+                "token": token,
+                "user": {
+                    "id": user_data["id"],
+                    "username": user_data["username"],
+                    "is_admin": user_data.get("is_admin", False),
+                },
+            }
+        )
 
     except (jwt.InvalidTokenError, ValueError) as e:
         current_app.logger.error(f"Login error: {str(e)}")
@@ -96,7 +98,10 @@ def create_user_profile(username: str, password: str) -> tuple:
             return None, (jsonify({"error": "Failed to create user"}), 500)
         return response.data, None
     except (ValueError, UnicodeEncodeError) as e:
-        return None, (jsonify({"error": f"Password encoding error: {str(e)}"}), 400)
+        return None, (
+            jsonify({"error": f"Password encoding error: {str(e)}"}),
+            400,
+        )
     except APIError as e:
         return None, (jsonify({"error": f"Database error: {str(e)}"}), 500)
 
@@ -104,6 +109,7 @@ def create_user_profile(username: str, password: str) -> tuple:
 @auth_api.route("/api/auth/register", methods=["POST"])
 def register():
     """Handle user registration."""
+
     def validate_input(data):
         username = data.get("username")
         password = data.get("password")
@@ -156,9 +162,7 @@ def verify_token():
             return jsonify({"error": "Token is required"}), 400
 
         decoded = jwt.decode(
-            token,
-            current_app.config["JWT_SECRET_KEY"],
-            algorithms=["HS256"]
+            token, current_app.config["JWT_SECRET_KEY"], algorithms=["HS256"]
         )
         return jsonify({"valid": True, "user": decoded})
 
