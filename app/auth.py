@@ -1,4 +1,5 @@
 """Authentication service API endpoints."""
+
 from datetime import datetime, timedelta
 from typing import Dict, Any, Tuple, Optional, Callable
 from dataclasses import dataclass
@@ -13,11 +14,14 @@ from .utils import is_valid_password
 
 auth_api = Blueprint("auth_api", __name__)
 
+
 @dataclass
 class AuthResponse:
     """Data class for authentication responses."""
+
     response: Response
     status_code: int
+
 
 def create_token(user_data: Dict[str, Any]) -> str:
     """Create a JWT token for the user."""
@@ -28,12 +32,13 @@ def create_token(user_data: Dict[str, Any]) -> str:
         "exp": datetime.utcnow() + timedelta(days=1),
     }
     return jwt.encode(
-        payload, 
-        current_app.config['JWT_SECRET_KEY'], 
-        algorithm='HS256'
+        payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256"
     )
 
-def validate_request_data(data: Optional[Dict[str, Any]]) -> Optional[AuthResponse]:
+
+def validate_request_data(
+    data: Optional[Dict[str, Any]],
+) -> Optional[AuthResponse]:
     """Validate request data for login and registration."""
     if not data:
         return AuthResponse(jsonify({"error": "Invalid request data"}), 400)
@@ -41,60 +46,59 @@ def validate_request_data(data: Optional[Dict[str, Any]]) -> Optional[AuthRespon
     password = data.get("password")
     if not username or not password:
         return AuthResponse(
-            jsonify({"error": "Username and password are required"}), 
-            400
+            jsonify({"error": "Username and password are required"}), 400
         )
     return None
 
+
 def handle_database_operation(
-    operation: str, 
-    func: Callable[[], Any]
+    operation: str, func: Callable[[], Any]
 ) -> Tuple[Any, Optional[AuthResponse]]:
     """Handle database operations with proper error handling."""
     try:
         return func(), None
     except (ValueError, Client.ApiError) as e:
-        current_app.logger.error(f"Database error during {operation}: {str(e)}")
-        return None, AuthResponse(
-            jsonify({"error": "Database operation failed"}), 
-            500
+        current_app.logger.error(
+            f"Database error during {operation}: {str(e)}"
         )
+        return None, AuthResponse(
+            jsonify({"error": "Database operation failed"}), 500
+        )
+
 
 def handle_login_response(user_data: Dict[str, Any]) -> AuthResponse:
     """Handle successful login response."""
     try:
         token = create_token(user_data)
-        return AuthResponse(jsonify({
-            "token": token,
-            "user": {
-                "id": user_data["id"],
-                "username": user_data["username"],
-                "is_admin": user_data.get("is_admin", False)
-            }
-        }), 200)
+        return AuthResponse(
+            jsonify(
+                {
+                    "token": token,
+                    "user": {
+                        "id": user_data["id"],
+                        "username": user_data["username"],
+                        "is_admin": user_data.get("is_admin", False),
+                    },
+                }
+            ),
+            200,
+        )
     except jwt.PyJWTError as e:
         current_app.logger.error(f"Token generation error: {str(e)}")
-        return AuthResponse(
-            jsonify({"error": "Token generation failed"}), 
-            500
-        )
+        return AuthResponse(jsonify({"error": "Token generation failed"}), 500)
+
 
 def handle_auth_error(error: Exception, operation: str) -> AuthResponse:
     """Centralized error handling for authentication operations."""
     if isinstance(error, jwt.InvalidTokenError):
         current_app.logger.error(f"JWT error in {operation}: {str(error)}")
-        return AuthResponse(
-            jsonify({"error": "Authentication failed"}), 
-            401
-        )
+        return AuthResponse(jsonify({"error": "Authentication failed"}), 401)
     if isinstance(error, ValueError):
         current_app.logger.error(f"Value error in {operation}: {str(error)}")
         return AuthResponse(jsonify({"error": str(error)}), 400)
     current_app.logger.error(f"Unexpected error in {operation}: {str(error)}")
-    return AuthResponse(
-        jsonify({"error": "Internal server error"}), 
-        500
-    )
+    return AuthResponse(jsonify({"error": "Internal server error"}), 500)
+
 
 @auth_api.route("/api/auth/login", methods=["POST"])
 def login() -> Tuple[Response, int]:
@@ -113,7 +117,7 @@ def login() -> Tuple[Response, int]:
             lambda: supabase.table("profiles")
             .select("*")
             .eq("username", username)
-            .execute()
+            .execute(),
         )
         if error:
             return error.response, error.status_code
@@ -125,8 +129,7 @@ def login() -> Tuple[Response, int]:
 
         try:
             if not bcrypt.checkpw(
-                password.encode("utf-8"),
-                user_data["password"].encode("utf-8")
+                password.encode("utf-8"), user_data["password"].encode("utf-8")
             ):
                 return jsonify({"error": "Invalid credentials"}), 401
         except ValueError as e:
@@ -139,6 +142,7 @@ def login() -> Tuple[Response, int]:
     except Exception as e:
         error_response = handle_auth_error(e, "login")
         return error_response.response, error_response.status_code
+
 
 @auth_api.route("/api/auth/register", methods=["POST"])
 def register() -> Tuple[Response, int]:
@@ -157,7 +161,7 @@ def register() -> Tuple[Response, int]:
             lambda: supabase.table("profiles")
             .select("username")
             .eq("username", username)
-            .execute()
+            .execute(),
         )
         if error:
             return error.response, error.status_code
@@ -171,8 +175,7 @@ def register() -> Tuple[Response, int]:
 
         try:
             hashed_password = bcrypt.hashpw(
-                password.encode("utf-8"), 
-                bcrypt.gensalt()
+                password.encode("utf-8"), bcrypt.gensalt()
             )
             profile_data = {
                 "username": username,
@@ -182,7 +185,9 @@ def register() -> Tuple[Response, int]:
 
             response, error = handle_database_operation(
                 "user creation",
-                lambda: supabase.table("profiles").insert(profile_data).execute()
+                lambda: supabase.table("profiles")
+                .insert(profile_data)
+                .execute(),
             )
             if error:
                 return error.response, error.status_code
@@ -200,6 +205,7 @@ def register() -> Tuple[Response, int]:
         error_response = handle_auth_error(e, "registration")
         return error_response.response, error_response.status_code
 
+
 @auth_api.route("/api/auth/verify", methods=["POST"])
 def verify_token():
     """Verify JWT token."""
@@ -212,8 +218,8 @@ def verify_token():
         try:
             payload = jwt.decode(
                 token,
-                current_app.config['JWT_SECRET_KEY'],
-                algorithms=['HS256']
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"],
             )
             return jsonify({"valid": True, "user": payload}), 200
         except jwt.ExpiredSignatureError:

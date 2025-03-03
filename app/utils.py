@@ -3,6 +3,7 @@
 import re
 from typing import Optional
 
+
 def is_valid_password(password: str) -> Optional[str]:
     """Check if password meets security requirements."""
     if len(password) < 8:
