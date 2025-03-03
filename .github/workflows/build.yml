@@ -40,24 +40,6 @@ jobs:
           git add .
           git diff --quiet && git diff --staged --quiet || (git commit -m "Apply automatic formatting changes" && git push)
 
-#  python-lint:
-#    needs: python-format
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#      - name: Setup Python
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: '3.12'
-#      - name: Install dependencies
-#        run: |
-#          pip install flake8 pylint
-#      - name: Run linting
-#        run: |
-#          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-#          pylint src/
-
   quality-checks:
     needs: python-format
     runs-on: ubuntu-latest
