@@ -1,9 +1,9 @@
 """Utility functions for the authentication service."""
 
 import re
+from typing import Optional
 
-
-def is_valid_password(password):
+def is_valid_password(password: str) -> Optional[str]:
     """Check if password meets security requirements."""
     if len(password) < 8:
         return "Password must be at least 8 characters long."

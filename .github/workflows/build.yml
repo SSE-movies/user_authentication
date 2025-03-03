@@ -24,11 +24,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.9'
       - name: Install Black
         run: pip install black
       - name: Run Black
-        run: black . --line-length 79 --exclude "Blueprint/__init__.py"
+        run: black . --line-length 79
       - name: Commit changes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,23 +56,8 @@ jobs:
 #          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 #          pylint src/
 
-  build-tailwind:
+  quality-checks:
     needs: python-format
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '16'
-      - name: Install npm dependencies
-        run: npm install
-      - name: Build Tailwind CSS
-        run: npm run build:css
-
-  unit-testing:
-    needs: build-tailwind
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -80,33 +65,42 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12
-      - name: Install requirements
+          python-version: '3.9'
+      - name: Install dependencies
         run: |
+          pip install flake8 pylint pytest pytest-cov
           pip install -r requirements.txt
-          pip install pytest pytest-cov
+      - name: Run Black
+        run: black --check --diff .
+      - name: Run isort
+        run: isort --check-only --diff .
+      - name: Run flake8
+        run: |
+          flake8 . \
+            --count \
+            --select=E9,F63,F7,F82,F401,F841 \
+            --show-source \
+            --statistics \
+            --exclude=.git,__pycache__,build,dist
+      - name: Run pylint
+        run: |
+          pylint app/ \
+            --disable=C0111,C0103,C0303,W0621,R0903,R0913,R0914,W0511 \
+            --max-line-length=79
+      - name: Run mypy
+        run: mypy app/
       - name: Run tests
-        working-directory: ./unit_tests
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/..
-          pytest test_auth.py test_search.py test_watchlist.py test_admin.py --cov=src --cov-report=xml
-#      - name: Upload coverage reports to Codecov
-#        uses: codecov/codecov-action@v3
-#        with:
-#          file: ./unit_tests/coverage.xml
-#          flags: unittests
-#          name: codecov-umbrella
-#          fail_ci_if_error: true
+          pytest tests/ --cov=app --cov-report=xml
 
   build-docker-image:
-    needs: unit-testing
+    needs: quality-checks
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
@@ -115,18 +109,17 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          IMAGE_NAME=ghcr.io/sse-movies/user-authentication-testing:latest
+          IMAGE_NAME=ghcr.io/sse-movies/user-authentication:latest
           docker build -t $IMAGE_NAME .
 
       - name: Push Docker Image to GHCR
         run: |
-          IMAGE_NAME=ghcr.io/sse-movies/user-authentication-testing:latest
+          IMAGE_NAME=ghcr.io/sse-movies/user-authentication:latest
           docker push $IMAGE_NAME
   
   deploy-azure-container-app:
     needs: build-docker-image
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -134,14 +127,14 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.USERAUTHENTICATIONTESTING_AZURE_CREDENTIALS }}
+          creds: ${{ secrets.GENERALAPPTESTING_AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name user-authentication-testing \
+            --name user-authentication \
             --resource-group SSE-movies \
-            --image ghcr.io/sse-movies/user-authentication-testing:latest \
+            --image ghcr.io/sse-movies/user-authentication:latest
 
       - name: Azure Logout
         run: az logout
