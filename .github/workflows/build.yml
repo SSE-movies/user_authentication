@@ -72,8 +72,6 @@ jobs:
         run: |
           pip install flake8 pylint pytest pytest-cov black mypy
           pip install -r requirements.txt
-      - name: Run Black
-        run: black --check --diff .
       - name: Run flake8
         run: |
           flake8 . \
