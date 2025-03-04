@@ -11,7 +11,7 @@ def create_app():
 
     @app.route("/")
     def home():
-        return jsonify({"message": "Welcome to the User Authentication API 1"})
+        return jsonify({"message": "Welcome to the User Authentication API 2"})
 
     return app
 
