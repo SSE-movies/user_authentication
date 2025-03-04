@@ -7,9 +7,11 @@ app.config.from_prefixed_env()
 # Register blueprints
 app.register_blueprint(auth_api)
 
-@app.route('/')
+
+@app.route("/")
 def home():
     return jsonify({"message": "Welcome to the User Authentication API"})
+
 
 # This ensures the app is accessible to Gunicorn
 application = app
