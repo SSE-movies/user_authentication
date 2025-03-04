@@ -17,5 +17,5 @@ ENV PORT=5000
 # Expose the port
 EXPOSE 5000
 
-# Start with gunicorn
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+# Start with gunicorn - specify the module and application variable
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:application"]
