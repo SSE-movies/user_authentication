@@ -77,7 +77,7 @@ jobs:
           pytest tests/ --cov=app --cov-report=xml
 
   build-docker-image-testing:
-    needs: unit-testing
+    needs: quality-checks
     runs-on: ubuntu-latest
 
     steps:
@@ -99,7 +99,7 @@ jobs:
           docker push $IMAGE_NAME
   
   build-docker-image-production:
-    needs: unit-testing
+    needs: quality-checks
     runs-on: ubuntu-latest
 
     steps:
