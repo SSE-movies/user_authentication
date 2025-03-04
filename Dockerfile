@@ -13,9 +13,10 @@ COPY . .
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
 ENV PORT=5000
+ENV PYTHONPATH=/app
 
 # Expose the port
 EXPOSE 5000
 
-# Start with gunicorn - specify the module and application variable
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:application"]
+# Start with gunicorn - use the module path to the app instance
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
