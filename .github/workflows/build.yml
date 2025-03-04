@@ -76,11 +76,12 @@ jobs:
         run: |
           pytest tests/ --cov=app --cov-report=xml
 
-  build-docker-image:
-    needs: quality-checks
+  build-docker-image-testing:
+    needs: unit-testing
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Log in to GitHub Container Registry
@@ -89,17 +90,40 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          IMAGE_NAME=ghcr.io/sse-movies/user-authentication:latest
+          IMAGE_NAME=ghcr.io/sse-movies/user-authentication-testing:latest
           docker build -t $IMAGE_NAME .
 
       - name: Push Docker Image to GHCR
         run: |
-          IMAGE_NAME=ghcr.io/sse-movies/user-authentication:latest
+          IMAGE_NAME=ghcr.io/sse-movies/user-authentication-testing:latest
           docker push $IMAGE_NAME
   
-  deploy-azure-container-app:
-    needs: build-docker-image
+  build-docker-image-production:
+    needs: unit-testing
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.ORG_GHCR_TOKEN }}" | docker login ghcr.io --username "oosborgschmitz" --password-stdin
+
+      - name: Build Docker Image
+        run: |
+          IMAGE_NAME=ghcr.io/sse-movies/user-authentication-production:latest
+          docker build -t $IMAGE_NAME .
+
+      - name: Push Docker Image to GHCR
+        run: |
+          IMAGE_NAME=ghcr.io/sse-movies/user-authentication-production:latest
+          docker push $IMAGE_NAME
+
+  deploy-azure-container-app-testing:
+    needs: build-docker-image-testing
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -107,14 +131,14 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.GENERALAPPTESTING_AZURE_CREDENTIALS }}
+          creds: ${{ secrets.USERAUTHENTICATIONTESTING_AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name user-authentication \
+            --name user-authentication-testing \
             --resource-group SSE-movies \
-            --image ghcr.io/sse-movies/user-authentication:latest
+            --image ghcr.io/sse-movies/user-authentication-testing:latest \
 
       - name: Azure Logout
         run: az logout
